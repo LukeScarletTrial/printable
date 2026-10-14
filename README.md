@@ -14,7 +14,7 @@ Download the pre-compiled binary directly — no Rust or build tools required:
 
 | Platform | Binary |
 |----------|--------|
-| Windows (x64) | [[`printable.exe`](printable.exe)](https://github.com/LukeScarletTrial/printable/releases/download/release/printable.exe) |
+| Windows (x64) | [[`printable.exe`](https://github.com/LukeScarletTrial/printable/releases/download/release/printable.exe)] |
 
 Place `printable.exe` anywhere in your system `PATH` and you're ready to go.
 
