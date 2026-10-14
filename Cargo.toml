@@ -10,3 +10,10 @@ blueprint_compiler = { path = "C:\\Users\\MSI\\Documents\\GitHub\\blueprint\\com
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 anyhow = "1.0"
+
+[profile.release]
+opt-level = 2
+debug = false
+strip = "debuginfo"
+lto = "thin"
+
