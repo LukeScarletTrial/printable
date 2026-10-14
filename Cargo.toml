@@ -1,0 +1,12 @@
+[package]
+name = "printable"
+version = "0.1.0"
+edition = "2021"
+description = "Printable - The official package manager and CLI build tool for the Blueprint (.bl) programming language"
+license = "MIT"
+
+[dependencies]
+blueprint_compiler = { git = "https://github.com/LukeScarletTrial/bl.git", branch = "main" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
