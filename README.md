@@ -4,7 +4,7 @@
   <img src="logo.png" alt="Printable Logo" width="140" height="140" />
 </p>
 
-<h3 align="center">The official CLI build tool and package manager for the <a href="https://github.com/LukeScarletTrial/bl">Blueprint (.bl)</a> programming language.</h3>
+<h3 align="center">The official CLI build tool and package manager for the <a href="https://github.com/LukeScarletTrial/blueprint">Blueprint (.bl)</a> programming language.</h3>
 
 ---
 
