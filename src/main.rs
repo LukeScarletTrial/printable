@@ -93,11 +93,17 @@ fn cmd_build(file: Option<&str>) -> Result<()> {
         config.name, config.version
     );
 
-    let file_path = file.unwrap_or("examples/example.bl");
+    let file_path = match file {
+        Some(f) => f,
+        None => {
+            eprintln!("Error: Missing source file.\nUsage: printable build <file.bl>");
+            std::process::exit(1);
+        }
+    };
     let src = fs::read_to_string(file_path)
         .with_context(|| format!("Failed to read source file '{}'", file_path))?;
 
-    println!("Checking and building '{}' to native executable...", file_path);
+    println!("Building '{}' to a native executable...", file_path);
 
     let input_path = Path::new(file_path);
     let file_stem = input_path
@@ -105,33 +111,53 @@ fn cmd_build(file: Option<&str>) -> Result<()> {
         .and_then(|s| s.to_str())
         .unwrap_or("app");
 
+    fs::create_dir_all("bin").context("Failed to create bin/ directory")?;
+
     let mut out_path = PathBuf::from("bin");
     out_path.push(format!("{}.exe", file_stem));
 
-    let built_exe = build_executable(&src, &out_path)
-        .with_context(|| format!("Build failed for '{}'", file_path))?;
-
-    println!(
-        "Build successful! Native executable generated at: {}",
-        built_exe.display()
-    );
+    match build_executable(&src, &out_path) {
+        Ok(built_exe) => {
+            println!(
+                "✓ Build successful → {}",
+                built_exe.display()
+            );
+        }
+        Err(e) => {
+            eprintln!("✗ Build error:\n  {}", e);
+            std::process::exit(1);
+        }
+    }
     Ok(())
 }
 
 fn cmd_run(file: Option<&str>) -> Result<()> {
-    let _config = require_bls_file()?;
+    // app.bls is optional for run — just warn if missing
+    if Path::new("app.bls").exists() {
+        let _ = require_bls_file(); // validate but don't fail
+    }
 
-    let file_path = file.unwrap_or("examples/example.bl");
+    let file_path = match file {
+        Some(f) => f,
+        None => {
+            eprintln!("Error: Missing source file.\nUsage: printable run <file.bl>");
+            std::process::exit(1);
+        }
+    };
     let src = fs::read_to_string(file_path)
         .with_context(|| format!("Failed to read source file '{}'", file_path))?;
 
-    let (_val, output) =
-        run(&src).with_context(|| format!("Execution failed for '{}'", file_path))?;
-
-    for line in output {
-        println!("{}", line);
+    match run(&src) {
+        Ok((_val, output)) => {
+            for line in output {
+                println!("{}", line);
+            }
+        }
+        Err(e) => {
+            eprintln!("✗ Error in '{}':\n  {}", file_path, e);
+            std::process::exit(1);
+        }
     }
-
     Ok(())
 }
 
