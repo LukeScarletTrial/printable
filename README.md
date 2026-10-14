@@ -4,19 +4,25 @@
   <img src="logo.png" alt="Printable Logo" width="140" height="140" />
 </p>
 
-<h3 align="center">The official CLI build tool and package manager for the <a href="https://github.com/LukeScarletTrial/bl">Blueprint (.bl)</a> programming language.</h3>
+<h3 align="center">The official CLI build tool and package manager for the <a href="https://github.com/LukeScarletTrial/blueprint">Blueprint (.bl)</a> programming language.</h3>
 
 ---
 
-## Downloads
+## Installation & Downloads
 
-Download the pre-compiled binary directly — no Rust or build tools required:
+### Automated One-Liner (PowerShell)
+```powershell
+irm https://raw.githubusercontent.com/LukeScarletTrial/printable/main/installer.ps1 | iex
+```
 
-| Platform | Binary |
-|----------|--------|
-| Windows (x64) | [`printable.exe`](printable.exe) |
+### Direct Downloads
 
-Place `printable.exe` anywhere in your system `PATH` and you're ready to go.
+| Artifact | Description |
+|----------|-------------|
+| [`installer.ps1`](installer.ps1) | PowerShell auto-installer script (sets up PATH) |
+| [`printable-setup.exe`](printable-setup.exe) | Standalone setup program |
+| [`printable.exe`](printable.exe) | Pre-compiled Windows x64 binary |
+
 
 ---
 
