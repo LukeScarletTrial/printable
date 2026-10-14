@@ -22,6 +22,7 @@ irm https://raw.githubusercontent.com/LukeScarletTrial/printable/main/installer.
 | [`installer.ps1`](installer.ps1) | PowerShell auto-installer script (sets up PATH) |
 | [`printable-setup.exe`](printable-setup.exe) | Standalone setup program |
 | [`printable.exe`](printable.exe) | Pre-compiled Windows x64 binary |
+| [**VS Code Extension**](https://github.com/LukeScarletTrial/blueprint/raw/main/vscode/blueprint-lang-0.1.0.vsix) | Syntax highlighting, icons & snippets (`.vsix`) |
 
 
 ---
