@@ -4,42 +4,48 @@
   <img src="logo.png" alt="Printable Logo" width="140" height="140" />
 </p>
 
-The official CLI build tool and package manager for the **[Blueprint (`.bl`)](https://github.com/LukeScarletTrial/bl)** programming language.
+<h3 align="center">The official CLI build tool and package manager for the <a href="https://github.com/LukeScarletTrial/bl">Blueprint (.bl)</a> programming language.</h3>
 
 ---
 
 ## Downloads
 
-You can download the pre-compiled executable directly:
-- **Windows (x64)**: [`printable.exe`](printable.exe)
+Download the pre-compiled binary directly — no Rust or build tools required:
 
-Place `printable.exe` into any folder in your system `PATH` to use it anywhere in your terminal.
+| Platform | Binary |
+|----------|--------|
+| Windows (x64) | [`printable.exe`](printable.exe) |
+
+Place `printable.exe` anywhere in your system `PATH` and you're ready to go.
 
 ---
 
 ## Features
 
-- **`printable init`**: Generates a standard `app.bls` (Blueprint Setup) configuration file.
-- **`printable build <file.bl>`**: Compiles `.bl` source files into native standalone `.exe` executables.
-- **`printable run <file.bl>`**: Type-checks and executes a Blueprint program directly.
-- **`printable install`**: Inspects and validates dependency declarations from `app.bls`.
+| Command | Description |
+|---------|-------------|
+| `printable init` | Creates an `app.bls` project configuration file |
+| `printable build <file.bl>` | Compiles `.bl` source to a standalone native `.exe` in `bin/` |
+| `printable run <file.bl>` | Runs a Blueprint program directly |
+| `printable install` | Validates dependency declarations in `app.bls` |
 
 ---
 
-## Usage
+## Quick Start
 
 ```bash
-# Initialize a Blueprint project
+# 1. Initialize your Blueprint project
 printable init
 
-# Compile to standalone native binary (emits bin/<name>.exe)
+# 2. Create your source file (main.bl)
+#    ... write your Blueprint code ...
+
+# 3. Build to a native executable
 printable build main.bl
+# -> bin/main.exe created!
 
-# Run your program
+# 4. Or run it directly
 printable run main.bl
-
-# Verify dependencies
-printable install
 ```
 
 ---
@@ -52,4 +58,21 @@ Prerequisites: Rust (Cargo) 1.80+
 cargo build --release
 ```
 
-The resulting binary will be in `target/release/printable.exe`.
+The resulting binary will be at `target/release/printable.exe`.
+
+---
+
+## Blueprint Language
+
+Blueprint source files (`.bl`) use square brackets `[...]` for code blocks:
+
+```blueprint
+@blueprint import Blueprint
+Blueprint.Setup("My App", true)
+
+func Main(): [
+    output("Hello, Blueprint!")
+]
+```
+
+→ See the full language at [LukeScarletTrial/bl](https://github.com/LukeScarletTrial/bl)
