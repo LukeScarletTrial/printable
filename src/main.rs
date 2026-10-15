@@ -47,96 +47,69 @@ fn main() {
 }
 
 fn require_bls_file() -> Result<ProjectConfig> {
-    let bls_path = Path::new("app.bls");
-    if !bls_path.exists() {
-        bail!("Error: 'app.bls' configuration file is required. Run 'printable init' to create one.");
-    }
-    let content = fs::read_to_string(bls_path)
-        .with_context(|| format!("Failed to read config file '{}'", bls_path.display()))?;
+    let candidate = if Path::new("config.bls").exists() {
+        Path::new("config.bls")
+    } else if Path::new("app.bls").exists() {
+        Path::new("app.bls")
+    } else {
+        bail!("Error: 'config.bls' configuration file is required. Run 'printable init' to create one.");
+    };
+
+    let content = fs::read_to_string(candidate)
+        .with_context(|| format!("Failed to read config file '{}'", candidate.display()))?;
     let config: ProjectConfig = serde_json::from_str(&content)
-        .with_context(|| format!("Invalid JSON or schema in '{}'", bls_path.display()))?;
+        .with_context(|| format!("Invalid JSON or schema in '{}'", candidate.display()))?;
     Ok(config)
 }
 
 fn cmd_init() -> Result<()> {
-    let path = Path::new("app.bls");
-    if path.exists() {
-        println!("app.bls already exists; project already initialized.");
+    let config_path = Path::new("config.bls");
+    let main_path = Path::new("main.bl");
+
+    if config_path.exists() && main_path.exists() {
+        println!("Project already initialized (config.bls and main.bl exist).");
         return Ok(());
     }
 
-    // 1. Create app.bls
-    let default_config = ProjectConfig {
-        name: "Blueprint App".to_string(),
-        version: "1.0.0".to_string(),
-        author: "Developer".to_string(),
-        compiler: CompilerConfig {
-            target: "native".to_string(),
-            optimizer: "optimized".to_string(),
-        },
-        dependencies: {
-            let mut deps = HashMap::new();
-            deps.insert("core".to_string(), "1.2.0".to_string());
-            deps
-        },
-    };
-
-    let formatted = serde_json::to_string_pretty(&default_config)?;
-    fs::write(path, formatted)?;
-
-    // 2. Create src directory and src/main.bl
-    let src_dir = Path::new("src");
-    if !src_dir.exists() {
-        fs::create_dir_all(src_dir)?;
+    // 1. Create config.bls
+    if !config_path.exists() {
+        let default_config = ProjectConfig {
+            name: "Blueprint App".to_string(),
+            version: "1.0.0".to_string(),
+            author: "Developer".to_string(),
+            compiler: CompilerConfig {
+                target: "native".to_string(),
+                optimizer: "optimized".to_string(),
+            },
+            dependencies: {
+                let mut deps = HashMap::new();
+                deps.insert("core".to_string(), "1.0.0".to_string());
+                deps
+            },
+        };
+        let formatted = serde_json::to_string_pretty(&default_config)?;
+        fs::write(config_path, formatted)?;
+        println!("✓ Created config.bls");
     }
 
-    let main_bl_path = src_dir.join("main.bl");
-    if !main_bl_path.exists() {
-        let starter_code = r#"@blueprint import Blueprint
-Blueprint.Setup("Blueprint App", true)
-
-defstruct Player [
-    name: str,
-    score: int
-]
-
-func IsHighScore(p: Player): bool [
-    if p.score >= 100 [
-        return true
-    ] else [
-        return false
-    ]
-]
+    // 2. Create main.bl with simple Hello World program
+    if !main_path.exists() {
+        let hello_world = r#"@blueprint import Blueprint
+Blueprint.Setup("Hello World", true)
 
 func Main(): [
-    def player = Player { name: "Alex", score: 120 }
-
-    if IsHighScore(player) [
-        output("High score achieved by " + player.name)
-    ] else [
-        output("Keep trying!")
-    ]
+    output("Hello, World!")
 ]
 "#;
-        fs::write(&main_bl_path, starter_code)?;
+        fs::write(main_path, hello_world)?;
+        println!("✓ Created main.bl (Hello World)");
     }
 
-    // 3. Create .gitignore if not present
-    let gitignore_path = Path::new(".gitignore");
-    if !gitignore_path.exists() {
-        fs::write(gitignore_path, "bin/\ntarget/\n*.exe\n")?;
-    }
-
-    println!("✓ Initialized full Blueprint project successfully!");
-    println!("  - Created app.bls");
-    println!("  - Created src/main.bl");
-    println!("  - Created .gitignore");
-    println!("\nNext steps:");
-    println!("  printable run src/main.bl");
-    println!("  printable build src/main.bl");
+    println!("\nProject ready! Run or build with:");
+    println!("  printable run");
+    println!("  printable build");
     Ok(())
 }
-
 
 fn cmd_build(file: Option<&str>) -> Result<()> {
     let config = require_bls_file()?;
@@ -145,13 +118,15 @@ fn cmd_build(file: Option<&str>) -> Result<()> {
         config.name, config.version
     );
 
-    let file_path = match file {
-        Some(f) => f,
-        None => {
-            eprintln!("Error: Missing source file.\nUsage: printable build <file.bl>");
-            std::process::exit(1);
-        }
+    let default_file = if Path::new("main.bl").exists() {
+        "main.bl"
+    } else if Path::new("src/main.bl").exists() {
+        "src/main.bl"
+    } else {
+        "main.bl"
     };
+
+    let file_path = file.unwrap_or(default_file);
     let src = fs::read_to_string(file_path)
         .with_context(|| format!("Failed to read source file '{}'", file_path))?;
 
@@ -184,18 +159,20 @@ fn cmd_build(file: Option<&str>) -> Result<()> {
 }
 
 fn cmd_run(file: Option<&str>) -> Result<()> {
-    // app.bls is optional for run — just warn if missing
-    if Path::new("app.bls").exists() {
-        let _ = require_bls_file(); // validate but don't fail
+    // config.bls or app.bls is optional for run
+    if Path::new("config.bls").exists() || Path::new("app.bls").exists() {
+        let _ = require_bls_file();
     }
 
-    let file_path = match file {
-        Some(f) => f,
-        None => {
-            eprintln!("Error: Missing source file.\nUsage: printable run <file.bl>");
-            std::process::exit(1);
-        }
+    let default_file = if Path::new("main.bl").exists() {
+        "main.bl"
+    } else if Path::new("src/main.bl").exists() {
+        "src/main.bl"
+    } else {
+        "main.bl"
     };
+
+    let file_path = file.unwrap_or(default_file);
     let src = fs::read_to_string(file_path)
         .with_context(|| format!("Failed to read source file '{}'", file_path))?;
 
