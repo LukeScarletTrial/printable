@@ -6,7 +6,7 @@ description = "Printable - The official package manager and CLI build tool for t
 license = "MIT"
 
 [dependencies]
-blueprint_compiler = { path = "C:\\Users\\MSI\\Documents\\GitHub\\blueprint\\compiler" }
+blueprint_compiler = { git = "https://github.com/LukeScarletTrial/blueprint.git", branch = "main" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 anyhow = "1.0"

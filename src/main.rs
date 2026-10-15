@@ -61,10 +61,11 @@ fn require_bls_file() -> Result<ProjectConfig> {
 fn cmd_init() -> Result<()> {
     let path = Path::new("app.bls");
     if path.exists() {
-        println!("app.bls already exists");
+        println!("app.bls already exists; project already initialized.");
         return Ok(());
     }
 
+    // 1. Create app.bls
     let default_config = ProjectConfig {
         name: "Blueprint App".to_string(),
         version: "1.0.0".to_string(),
@@ -82,9 +83,60 @@ fn cmd_init() -> Result<()> {
 
     let formatted = serde_json::to_string_pretty(&default_config)?;
     fs::write(path, formatted)?;
-    println!("Created app.bls");
+
+    // 2. Create src directory and src/main.bl
+    let src_dir = Path::new("src");
+    if !src_dir.exists() {
+        fs::create_dir_all(src_dir)?;
+    }
+
+    let main_bl_path = src_dir.join("main.bl");
+    if !main_bl_path.exists() {
+        let starter_code = r#"@blueprint import Blueprint
+Blueprint.Setup("Blueprint App", true)
+
+defstruct Player [
+    name: str,
+    score: int
+]
+
+func IsHighScore(p: Player): bool [
+    if p.score >= 100 [
+        return true
+    ] else [
+        return false
+    ]
+]
+
+func Main(): [
+    def player = Player { name: "Alex", score: 120 }
+
+    if IsHighScore(player) [
+        output("High score achieved by " + player.name)
+    ] else [
+        output("Keep trying!")
+    ]
+]
+"#;
+        fs::write(&main_bl_path, starter_code)?;
+    }
+
+    // 3. Create .gitignore if not present
+    let gitignore_path = Path::new(".gitignore");
+    if !gitignore_path.exists() {
+        fs::write(gitignore_path, "bin/\ntarget/\n*.exe\n")?;
+    }
+
+    println!("✓ Initialized full Blueprint project successfully!");
+    println!("  - Created app.bls");
+    println!("  - Created src/main.bl");
+    println!("  - Created .gitignore");
+    println!("\nNext steps:");
+    println!("  printable run src/main.bl");
+    println!("  printable build src/main.bl");
     Ok(())
 }
+
 
 fn cmd_build(file: Option<&str>) -> Result<()> {
     let config = require_bls_file()?;
