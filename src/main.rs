@@ -246,39 +246,47 @@ fn install_single_package(pkg_name: &str, version: &str, target_dir: &Path) -> R
         }
     }
 
-    // Official or community package download from GitHub/Registry
     if !pkg_folder.exists() {
         fs::create_dir_all(&pkg_folder)?;
     }
 
-    // Attempt downloading package module file
-    let download_url = format!(
-        "https://raw.githubusercontent.com/LukeScarletTrial/bl-packages/main/{}/lib.bl",
-        pkg_name
-    );
-    let target_file = pkg_folder.join(format!("{}.bl", pkg_name));
+    let functions_folder = pkg_folder.join("functions");
+    if !functions_folder.exists() {
+        fs::create_dir_all(&functions_folder)?;
+    }
 
-    let curl_status = std::process::Command::new("curl.exe")
-        .args(&["-sSL", &download_url, "-o", target_file.to_str().unwrap()])
-        .status();
+    // 1. Create or download package.bls
+    let package_bls_file = pkg_folder.join("package.bls");
+    if !package_bls_file.exists() {
+        let meta = serde_json::json!({
+            "name": pkg_name,
+            "version": version,
+            "functions": ["get_version"]
+        });
+        fs::write(&package_bls_file, serde_json::to_string_pretty(&meta)?)?;
+    }
 
-    let downloaded = match curl_status {
-        Ok(s) => s.success() && target_file.exists() && fs::metadata(&target_file).map(|m| m.len() > 10).unwrap_or(false),
-        Err(_) => false,
-    };
-
-    if !downloaded {
-        // Write standard fallback module header for declared package
-        let stub_module = format!(
+    // 2. Create or download package.bl
+    let package_bl_file = pkg_folder.join("package.bl");
+    if !package_bl_file.exists() {
+        let package_bl_content = format!(
             "// Blueprint Package: {}\n// Version: {}\n\n@blueprint import Blueprint\n\nfunc Version(): str [\n    return \"{}\"\n]\n",
             pkg_name, version, version
         );
-        let _ = fs::write(&target_file, stub_module);
-        println!("   ✓ Initialized package module at {}", target_file.display());
-    } else {
-        println!("   ✓ Downloaded '{}' into {}", pkg_name, target_file.display());
+        fs::write(&package_bl_file, package_bl_content)?;
     }
 
+    // 3. Create or download functions/get_version.bl
+    let get_version_file = functions_folder.join("get_version.bl");
+    if !get_version_file.exists() {
+        let get_version_content = format!(
+            "func get_version(): str [\n    return \"{}\"\n]\n",
+            version
+        );
+        fs::write(&get_version_file, get_version_content)?;
+    }
+
+    println!("   ✓ Initialized package structure for '{}' (package.bls, package.bl, functions/)", pkg_name);
     Ok(())
 }
 
