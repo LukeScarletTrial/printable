@@ -48,20 +48,27 @@ fn main() {
     }
 }
 
-fn require_bls_file() -> Result<ProjectConfig> {
-    let candidate = if Path::new("config.bls").exists() {
-        Path::new("config.bls")
+fn get_config_path() -> PathBuf {
+    if Path::new("config.bls").exists() {
+        PathBuf::from("config.bls")
     } else if Path::new("app.bls").exists() {
-        Path::new("app.bls")
+        PathBuf::from("app.bls")
     } else {
-        bail!("Error: 'config.bls' configuration file is required. Run 'printable init' to create one.");
-    };
+        PathBuf::from("config.bls")
+    }
+}
 
-    let content = fs::read_to_string(candidate)
+fn require_bls_file() -> Result<(ProjectConfig, PathBuf)> {
+    let candidate = get_config_path();
+    if !candidate.exists() {
+        bail!("Error: 'config.bls' configuration file is required. Run 'printable init' to create one.");
+    }
+
+    let content = fs::read_to_string(&candidate)
         .with_context(|| format!("Failed to read config file '{}'", candidate.display()))?;
     let config: ProjectConfig = serde_json::from_str(&content)
         .with_context(|| format!("Invalid JSON or schema in '{}'", candidate.display()))?;
-    Ok(config)
+    Ok((config, candidate))
 }
 
 fn cmd_init() -> Result<()> {
@@ -283,7 +290,7 @@ fn cmd_compile_module(module_path_arg: Option<&str>, output_arg: Option<&str>) -
 }
 
 fn cmd_build(file: Option<&str>) -> Result<()> {
-    let config = require_bls_file()?;
+    let (config, _) = require_bls_file()?;
     println!(
         "Loaded configuration for '{}' v{}",
         config.name, config.version
@@ -362,7 +369,7 @@ fn cmd_run(file: Option<&str>) -> Result<()> {
 }
 
 fn cmd_install(target_pkg: Option<&str>) -> Result<()> {
-    let mut config = require_bls_file()?;
+    let (mut config, cfg_path) = require_bls_file()?;
     let modules_dir = Path::new("modules");
     if !modules_dir.exists() {
         fs::create_dir_all(modules_dir)?;
@@ -371,10 +378,14 @@ fn cmd_install(target_pkg: Option<&str>) -> Result<()> {
     if let Some(pkg) = target_pkg {
         println!("Installing package '{}'...", pkg);
         install_single_package(pkg, "latest", modules_dir)?;
-        config.dependencies.insert(pkg.to_string(), "latest".to_string());
+        let dep_name = Path::new(pkg)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or(pkg);
+        config.dependencies.insert(dep_name.to_string(), "latest".to_string());
         let formatted = serde_json::to_string_pretty(&config)?;
-        fs::write("app.bls", formatted)?;
-        println!("✓ Added '{}' to app.bls dependencies.", pkg);
+        fs::write(&cfg_path, formatted)?;
+        println!("✓ Added '{}' to {} dependencies.", dep_name, cfg_path.display());
         return Ok(());
     }
 
@@ -394,6 +405,22 @@ fn cmd_install(target_pkg: Option<&str>) -> Result<()> {
 }
 
 fn install_single_package(pkg_name: &str, version: &str, target_dir: &Path) -> Result<()> {
+    let pkg_path = Path::new(pkg_name);
+
+    // 0. If target is a local file (e.g. library.blm or path/to/module.blm)
+    if pkg_name.ends_with(".blm") || pkg_path.is_file() {
+        let file_name = pkg_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or(pkg_name);
+        let dest = target_dir.join(file_name);
+        if pkg_path.exists() {
+            fs::copy(pkg_path, &dest)?;
+            println!("   ✓ Copied local compiled module to {}", dest.display());
+            return Ok(());
+        }
+    }
+
     let pkg_folder = target_dir.join(pkg_name);
 
     if pkg_name.starts_with("http://") || pkg_name.starts_with("https://") || pkg_name.ends_with(".git") {
